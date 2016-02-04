@@ -142,28 +142,59 @@ class ColumnSorting extends BasePlugin {
    * @param {number} col Sorted column index.
    * @param {boolean|undefined} order Sorting order (`true` for ascending, `false` for descending).
    */
-  setSortingColumn(col, order) {
+  setSortingColumn(col, order, hasShiftTrigger) {
+
     if (typeof col == 'undefined') {
+
       this.hot.sortColumn = void 0;
+
       this.hot.sortOrder = void 0;
 
       return;
-    } else if (this.hot.sortColumn === col && typeof order == 'undefined') {
-      if (this.hot.sortOrder === false) {
-        this.hot.sortOrder = void 0;
-      } else {
-        this.hot.sortOrder = !this.hot.sortOrder;
-      }
 
-    } else {
-      this.hot.sortOrder = typeof order === 'undefined' ? true : order;
     }
 
-    this.hot.sortColumn = col;
+    this.hot.sortOrder = this.hot.sortOrder || []
+
+    if ( !hasShiftTrigger ) {
+
+      this.hot.sortColumn = [col]
+
+      this.hot.sortOrder[0] = !this.hot.sortOrder[0]
+
+      return
+
+    } else {
+
+      this.hot.sortColumn = this.hot.sortColumn || []
+
+      // Limit to two values
+      if ( this.hot.sortColumn.length === 2 ) {
+
+        // Don't append same value
+        if ( this.hot.sortColumn[1] === col ) {
+          this.hot.sortOrder[1] = !this.hot.sortOrder[1]
+          return
+        }
+
+        this.hot.sortColumn = this.hot.sortColumn.splice(1, 1)
+      }
+
+      // Don't append same value
+      if ( this.hot.sortColumn[0] === col ) {
+        return
+      }
+
+      this.hot.sortColumn.push(col)
+
+      this.hot.sortOrder[1] = false
+
+    }
+
   }
 
-  sortByColumn(col, order) {
-    this.setSortingColumn(col, order);
+  sortByColumnfunction(col, order, hasShiftTrigger) {
+    this.setSortingColumn(col, order, hasShiftTrigger)
 
     if (typeof this.hot.sortColumn == 'undefined') {
       return;
@@ -226,9 +257,9 @@ class ColumnSorting extends BasePlugin {
 
     this.bindedSortEvent = true;
     eventManager.addEventListener(this.hot.rootElement, 'click', function(e) {
-      if (hasClass(e.target, 'columnSorting')) {
-        let col = getColumn(e.target);
 
+      if (hasClass(e.target, 'columnSorting')) {
+        var col = getColumn(e.target);
         if (col === this.lastSortedColumn) {
           switch (_this.hot.sortOrder) {
             case void 0:
@@ -243,11 +274,10 @@ class ColumnSorting extends BasePlugin {
         } else {
           _this.sortOrderClass = 'ascending';
         }
-
         this.lastSortedColumn = col;
-
-        _this.sortByColumn(col);
+        _this.sortByColumn(col, undefined, e.shiftKey);
       }
+
     });
 
     function countRowHeaders() {
